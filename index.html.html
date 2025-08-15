@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Avanzado de Gestión de Consumo Eléctrico</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@v2.1.0/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        :root {
+            --primary: #1a2a6c;
+            --secondary: #b21f1f;
+            --accent: #27ae60;
+            --warning: #e74c3c;
+            --light: #f8f9fa;
+            --dark: #2c3e50;
+            --gray: #7f8c8d;
+            --dial-bg: #f0f0f0;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2c3e50, #1a2a6c);
+            color: #333;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(to right, #1a2a6c, #2c3e50);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: "";
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            background: linear-gradient(45deg, #1a2a6c, #b21f1f, #1a2a6c);
+            z-index: -1;
+            filter: blur(20px);
+            opacity: 0.7;
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .tabs {
+            display: flex;
+            background: #2c3e50;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .tab-button {
+            flex: 1;
+            padding: 15px;
+            background: #34495e;
+            color: #ecf0f1;
+            border: none;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-right: 1px solid var(--dark);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .tab-button::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--accent);
+            transform: translateY(5px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-button:hover::after {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .tab-button:last-child {
+            border-right: none;
+        }
+        
+        .tab-button:hover {
+            background: #1a2a6c;
+        }
+        
+        .tab-button.active {
+            background: #1a2a6c;
+            font-weight: bold;
+        }
+        
+        .tab-button.active::after {
+            transform: translateY(0);
+            opacity: 1;
+            background: var(--accent);
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 30px;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: var(--primary);
+        }
+        
+        .card h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .card h2 i {
+            margin-right: 10px;
+            background: var(--primary);
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        input, select, button, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus, select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+            outline: none;
+        }
+        
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.1);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+        
+        button:hover::after {
+            transform: translateX(0);
+        }
+        
+        button:hover {
+            background: #152252;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .result {
+            background: #e8f4f8;
+            border-left: 4px solid var(--accent);
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        .result h3 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .result p {
+            margin: 5px 0;
+            font-size: 1.1rem;
+        }
+        
+        .result-value {
+            font-weight: bold;
+            color: var(--warning);
+        }
+        
+        .dial-row {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin: 30px 0;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding: 15px 0;
+        }
+        
+        .dial-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 5px;
+            min-width: 150px;
+        }
+        
+        .dial-label {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--dark);
+            font-size: 1.3rem;
+            background: var(--dial-bg);
+            padding: 8px 15px;
+            border-radius: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .dial {
+            width: 160px;
+            height: 160px;
+            position: relative;
+            background: var(--dial-bg);
+            border-radius: 50%;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .dial-svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .dial-center {
+            fill: #e0e0e0;
+            stroke: #000;
+            stroke-width: 1;
+        }
+        
+        .dial-text {
+            font-size: 36px;
+            font-weight: bold;
+            fill: var(--dark);
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
+        
+        .dial-number {
+            font-size: 20px;
+            font-weight: normal;
+            fill: #000;
+        }
+        
+        .dial-number.active {
+            font-weight: bold;
+            fill: var(--warning);
+        }
+        
+        .dial-line {
+            stroke: #000;
+            stroke-width: 1;
+        }
+        
+        .dial-needle {
+            stroke: var(--warning);
+            stroke-width: 3;
+            stroke-linecap: round;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 0.95rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: var(--primary);
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        tr:hover {
+            background-color: #e9f7fe;
+        }
+        
+        .simulation-results {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .simulation-card {
+            flex: 1;
+            min-width: 250px;
+            background: #e8f4f8;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .simulation-card h3 {
+            text-align: center;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+        
+        .instructions {
+            background: #fff8e1;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        .instructions h3 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .image-preview {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px 0;
+        }
+        
+        .preview-container {
+            width: 100%;
+            max-width: 500px;
+            height: 300px;
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-bottom: 20px;
+            background: #f9f9f9;
+        }
+        
+        .preview-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .digit-validation {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .digit-input {
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            text-align: center;
+            border: 2px solid var(--accent);
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        
+        .digit-input.correct {
+            border-color: var(--accent);
+            background: rgba(39, 174, 96, 0.1);
+        }
+        
+        .digit-input.incorrect {
+            border-color: var(--warning);
+            background: rgba(231, 76, 60, 0.1);
+        }
+        
+        .ocr-tips {
+            background: #e8f4f8;
+            border-left: 4px solid var(--accent);
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        .ocr-tips h3 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .ocr-tips ul {
+            padding-left: 20px;
+        }
+        
+        .ocr-tips li {
+            margin-bottom: 8px;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .status-text {
+            text-align: center;
+            font-size: 14px;
+            color: var(--gray);
+        }
+        
+        .consumption-summary {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .summary-card {
+            background: #e8f4f8;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            flex: 1;
+            min-width: 180px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+        
+        .summary-card h4 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .summary-card .value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--warning);
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group-half {
+            flex: 1;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .btn-save {
+            background: var(--accent);
+        }
+        
+        .btn-delete {
+            background: var(--warning);
+        }
+        
+        .history-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #f0f0f0;
+        }
+        
+        .history-section h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .history-section h3 i {
+            margin-right: 10px;
+            background: var(--primary);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+        
+        .history-table {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        
+        .history-table table {
+            margin-top: 0;
+        }
+        
+        .history-table th {
+            position: sticky;
+            top: 0;
+        }
+        
+        .chart-container {
+            height: 200px;
+            margin: 20px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .dial-row {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .simulation-results {
+                flex-direction: column;
+            }
+            
+            .digit-input {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+            
+            .form-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .dial-container {
+                min-width: 130px;
+            }
+            
+            .dial {
+                width: 130px;
+                height: 130px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Sistema Avanzado de Gestión de Consumo Eléctrico</h1>
+            <p>Control preciso de mediciones, registros y simulaciones</p>
+        </header>
+        
+        <div class="tabs">
+            <button class="tab-button active" data-tab="lectura">Lectura desde Foto</button>
+            <button class="tab-button" data-tab="registro">Registro Mensual</button>
+            <button class="tab-button" data-tab="simulador">Simulador de Lectura</button>
+        </div>
+        
+        <!-- Pestaña 1: Lectura desde foto -->
+        <div id="lectura" class="tab-content active">
+            <div class="card">
+                <h2><i>1</i> Lectura desde Foto</h2>
+                
+                <div class="ocr-tips">
+                    <h3>Consejos para mejor precisión:</h3>
+                    <ul>
+                        <li>Asegúrate de que la imagen esté bien iluminada y enfocada</li>
+                        <li>Los dígitos deben ocupar al menos el 50% de la imagen</li>
+                        <li>Coloca el medidor en posición horizontal</li>
+                        <li>Evita sombras y reflejos en el medidor</li>
+                    </ul>
+                </div>
+                
+                <div class="form-group">
+                    <label for="imageInput">Seleccionar Imagen del Medidor:</label>
+                    <input type="file" id="imageInput" accept="image/*">
+                </div>
+                
+                <div class="image-preview">
+                    <div class="preview-container">
+                        <img id="previewImage" src="" alt="Vista previa de la imagen">
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress" id="ocrProgress"></div>
+                    </div>
+                    <div class="status-text" id="ocrStatus">Esperando imagen...</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="previousReading">Lectura Anterior (kWh):</label>
+                    <input type="number" id="previousReading" placeholder="Ingresa la lectura anterior">
+                </div>
+                
+                <div class="form-group">
+                    <label for="prevReadingDate">Fecha de Lectura Anterior:</label>
+                    <input type="date" id="prevReadingDate">
+                </div>
+                
+                <button id="calculateBtn">Procesar Imagen y Calcular</button>
+                
+                <div id="digitValidationSection" style="display: none;">
+                    <h3>Verificación de Dígitos Detectados</h3>
+                    <p>Por favor verifica los dígitos detectados y corrige si es necesario:</p>
+                    
+                    <div class="digit-validation" id="digitValidation">
+                        <!-- Los inputs de dígitos se generarán aquí -->
+                    </div>
+                    
+                    <button id="confirmDigitsBtn">Confirmar Dígitos</button>
+                </div>
+                
+                <div id="ocrResult" class="result" style="display: none;">
+                    <h3>Resultados de la Lectura:</h3>
+                    <p>Lectura detectada: <span id="detectedReading" class="result-value"></span></p>
+                    <p>Lectura anterior: <span id="prevReading" class="result-value"></span></p>
+                    <p>Consumo: <span id="consumption" class="result-value"></span> kWh</p>
+                    <p>Costo: <span id="cost" class="result-value"></span> Lempiras</p>
+                    
+                    <div class="consumption-summary">
+                        <div class="summary-card">
+                            <h4>Consumo Diario</h4>
+                            <div class="value" id="dailyConsumption">0.0 kWh</div>
+                        </div>
+                        <div class="summary-card">
+                            <h4>Costo Diario</h4>
+                            <div class="value" id="dailyCost">L 0.00</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button id="saveReadingBtn" style="display: none; background: var(--accent);">Guardar Lectura</button>
+                    <button id="newReadingBtn" style="display: none; background: var(--primary);">Nueva Lectura</button>
+                </div>
+                
+                <div class="history-section">
+                    <h3><i>📊</i> Promedio Histórico</h3>
+                    <div class="summary-card">
+                        <h4>Consumo Diario Promedio</h4>
+                        <div class="value" id="historicalAvg">0.0 kWh</div>
+                    </div>
+                    
+                    <h3><i>📈</i> Gráfico de Consumo (Últimos 6 meses)</h3>
+                    <div class="chart-container">
+                        <canvas id="readingChart"></canvas>
+                    </div>
+                    
+                    <h3><i>📋</i> Historial de Lecturas</h3>
+                    <div class="history-table">
+                        <table id="readingHistoryTable">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Lect. Ant.</th>
+                                    <th>Lect. Act.</th>
+                                    <th>Consumo</th>
+                                    <th>Costo (L)</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="readingHistoryBody">
+                                <!-- Registros de lecturas se cargarán aquí -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pestaña 2: Registro mensual -->
+        <div id="registro" class="tab-content">
+            <div class="card">
+                <h2><i>2</i> Registro Mensual</h2>
+                <p>Registro completo de tus recibos eléctricos mensuales.</p>
+                
+                <div class="card" style="background: #f8f9fa; margin-bottom: 30px;">
+                    <h3>Nuevo Recibo</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group-half">
+                            <label for="receiptDate">Fecha de Emisión:</label>
+                            <input type="date" id="receiptDate">
+                        </div>
+                        <div class="form-group-half">
+                            <label for="daysBilled">Días Facturados:</label>
+                            <input type="number" id="daysBilled" placeholder="Días facturados" value="30">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group-half">
+                            <label for="totalKwh">Total kWh:</label>
+                            <input type="number" id="totalKwh" placeholder="Total kWh">
+                        </div>
+                        <div class="form-group-half">
+                            <label for="energyCostReg">Costo Energía (L):</label>
+                            <input type="number" id="energyCostReg" placeholder="Costo energía">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group-half">
+                            <label for="totalReceipt">Total Recibo (L):</label>
+                            <input type="number" id="totalReceipt" placeholder="Total recibo">
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button id="saveReceiptBtn" style="background: var(--primary);">Guardar Recibo</button>
+                    </div>
+                </div>
+                
+                <h3><i>📈</i> Gráfico de Consumo (Últimos 6 meses)</h3>
+                <div class="chart-container">
+                    <canvas id="receiptChart"></canvas>
+                </div>
+                
+                <h3>Historial de Recibos</h3>
+                <div class="table-container">
+                    <table id="historyTable">
+                        <thead>
+                            <tr>
+                                <th>Fecha Emisión</th>
+                                <th>Total kWh</th>
+                                <th>Costo Energía (L)</th>
+                                <th>Días Facturados</th>
+                                <th>Total Recibo (L)</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyBody">
+                            <!-- Los registros se cargarán aquí -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <button id="clearHistoryBtn" style="background: var(--warning); margin-top: 20px;">Borrar Historial Completo</button>
+            </div>
+        </div>
+        
+        <!-- Pestaña 3: Simulador de lectura -->
+        <div id="simulador" class="tab-content">
+            <div class="card">
+                <h2><i>3</i> Simulador de Lectura</h2>
+                <div class="instructions">
+                    <h3>Instrucciones:</h3>
+                    <ul>
+                        <li>Ingresa la lectura anterior de tu medidor</li>
+                        <li>Especifica el consumo mínimo y máximo que deseas simular</li>
+                        <li>Haz clic en "Simular Lecturas" para ver los resultados</li>
+                        <li>Observa los diales con diferentes sentidos de giro según su posición</li>
+                    </ul>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group-half">
+                        <label for="simPrevReading">Lectura Anterior (kWh):</label>
+                        <input type="number" id="simPrevReading" placeholder="Ingresa la lectura anterior">
+                    </div>
+                    <div class="form-group-half">
+                        <label for="daysPeriod">Período en Días:</label>
+                        <input type="number" id="daysPeriod" placeholder="Días del período" value="30">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group-half">
+                        <label for="minConsumption">Consumo Mínimo (kWh):</label>
+                        <input type="number" id="minConsumption" placeholder="Mínimo">
+                    </div>
+                    <div class="form-group-half">
+                        <label for="maxConsumption">Consumo Máximo (kWh):</label>
+                        <input type="number" id="maxConsumption" placeholder="Máximo">
+                    </div>
+                </div>
+                
+                <button id="simulateBtn">Simular Lecturas</button>
+                
+                <div id="simulationContainer" style="display: none;">
+                    <h3 style="text-align: center; margin: 30px 0 20px;">Lectura Mínima</h3>
+                    <div class="dial-row" id="minDials">
+                        <!-- Los diales se generarán aquí -->
+                    </div>
+                    
+                    <h3 style="text-align: center; margin: 30px 0 20px;">Lectura Máxima</h3>
+                    <div class="dial-row" id="maxDials">
+                        <!-- Los diales se generarán aquí -->
+                    </div>
+                    
+                    <div class="simulation-results">
+                        <div class="simulation-card">
+                            <h3>Lectura Mínima</h3>
+                            <p>Lectura: <span id="minReading" class="result-value"></span></p>
+                            <p>Consumo: <span id="minSimConsumption" class="result-value"></span> kWh</p>
+                            <p>Costo Energía: <span id="minSimCost" class="result-value"></span> Lempiras</p>
+                            <p>Costo Diario: <span id="minDailyCost" class="result-value"></span> Lempiras</p>
+                        </div>
+                        
+                        <div class="simulation-card">
+                            <h3>Lectura Máxima</h3>
+                            <p>Lectura: <span id="maxReading" class="result-value"></span></p>
+                            <p>Consumo: <span id="maxSimConsumption" class="result-value"></span> kWh</p>
+                            <p>Costo Energía: <span id="maxSimCost" class="result-value"></span> Lempiras</p>
+                            <p>Costo Diario: <span id="maxDailyCost" class="result-value"></span> Lempiras</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let currentReading = 0;
+        let previousReading = 0;
+        let consumption = 0;
+        let cost = 0;
+        let detectedDigits = [0,0,0,0,0];
+        let daysPeriod = 30;
+        let readingChart = null;
+        let receiptChart = null;
+        
+        // Funciones para cambiar pestañas
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                // Remover clase activa de todos los botones y contenidos
+                document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                
+                // Agregar clase activa al botón clickeado
+                button.classList.add('active');
+                
+                // Mostrar el contenido correspondiente
+                const tabId = button.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+        
+        // Vista previa de imagen
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            const previewContainer = document.querySelector('.preview-container');
+            const previewImage = document.getElementById('previewImage');
+            const statusText = document.getElementById('ocrStatus');
+            
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    previewContainer.style.border = '2px solid var(--accent)';
+                    statusText.textContent = 'Imagen cargada. Lista para procesar.';
+                    statusText.style.color = 'var(--accent)';
+                }
+                
+                reader.readAsDataURL(this.files[0]);
+            } else {
+                previewImage.src = '';
+                previewContainer.style.border = '2px dashed #ccc';
+                statusText.textContent = 'Esperando imagen...';
+                statusText.style.color = 'var(--gray)';
+            }
+        });
+        
+        // Pestaña 1: Lectura desde foto - con Tesseract.js
+        document.getElementById('calculateBtn').addEventListener('click', async () => {
+            const imageInput = document.getElementById('imageInput');
+            const prevReadingInput = document.getElementById('previousReading');
+            const prevReadingDateInput = document.getElementById('prevReadingDate');
+            const statusText = document.getElementById('ocrStatus');
+            const progressBar = document.getElementById('ocrProgress');
+            
+            if (!imageInput.files.length) {
+                alert('Por favor, selecciona una imagen del medidor.');
+                return;
+            }
+            
+            if (!prevReadingInput.value) {
+                alert('Por favor, ingresa la lectura anterior.');
+                return;
+            }
+            
+            if (!prevReadingDateInput.value) {
+                alert('Por favor, ingresa la fecha de la lectura anterior.');
+                return;
+            }
+            
+            previousReading = parseInt(prevReadingInput.value);
+            const prevDate = new Date(prevReadingDateInput.value);
+            const currentDate = new Date();
+            
+            // Calcular días transcurridos
+            const timeDiff = currentDate - prevDate;
+            daysPeriod = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+            
+            // Mostrar progreso
+            progressBar.style.width = '0%';
+            statusText.textContent = 'Procesando imagen...';
+            statusText.style.color = 'var(--primary)';
+            
+            try {
+                // Usar Tesseract.js para procesar la imagen
+                const result = await Tesseract.recognize(
+                    imageInput.files[0],
+                    'eng',  // idioma: inglés para dígitos
+                    { 
+                        logger: m => {
+                            if (m.status === 'recognizing text') {
+                                progressBar.style.width = `${Math.round(m.progress * 100)}%`;
+                                statusText.textContent = `Procesando: ${Math.round(m.progress * 100)}%`;
+                            }
+                        },
+                        tessedit_char_whitelist: '0123456789' // Solo dígitos
+                    }
+                );
+                
+                // Obtener el texto reconocido
+                const text = result.data.text;
+                
+                // Limpiar el texto: quitar espacios y caracteres no deseados
+                const digitsOnly = text.replace(/\D/g, '');
+                
+                // Tomar los últimos 5 dígitos (asumiendo que el medidor muestra 5 dígitos)
+                if (digitsOnly.length < 5) {
+                    throw new Error('No se pudieron detectar 5 dígitos en la imagen.');
+                }
+                
+                const detectedReading = digitsOnly.substring(digitsOnly.length - 5);
+                
+                // Actualizar estado
+                statusText.textContent = 'Dígitos detectados. Verifica abajo.';
+                statusText.style.color = 'var(--accent)';
+                progressBar.style.width = '100%';
+                
+                // Mostrar dígitos para verificación
+                showDigitValidation(detectedReading);
+                
+            } catch (error) {
+                statusText.textContent = `Error: ${error.message}`;
+                statusText.style.color = 'var(--warning)';
+                progressBar.style.width = '0%';
+                console.error(error);
+            }
+        });
+        
+        // Mostrar dígitos para verificación manual
+        function showDigitValidation(digits) {
+            const digitValidation = document.getElementById('digitValidation');
+            digitValidation.innerHTML = '';
+            
+            // Guardar dígitos detectados
+            detectedDigits = digits.split('').map(Number);
+            
+            // Crear inputs para cada dígito
+            for (let i = 0; i < 5; i++) {
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.min = '0';
+                input.max = '9';
+                input.className = 'digit-input';
+                input.value = digits[i];
+                input.dataset.index = i;
+                
+                input.addEventListener('change', function() {
+                    detectedDigits[this.dataset.index] = parseInt(this.value) || 0;
+                    this.className = 'digit-input';
+                });
+                
+                digitValidation.appendChild(input);
+            }
+            
+            // Mostrar sección de verificación
+            document.getElementById('digitValidationSection').style.display = 'block';
+        }
+        
+        // Confirmar dígitos verificados
+        document.getElementById('confirmDigitsBtn').addEventListener('click', function() {
+            // Construir lectura actual a partir de dígitos verificados
+            currentReading = parseInt(detectedDigits.join(''));
+            
+            // Calcular consumo y costo
+            consumption = currentReading - previousReading;
+            
+            if (consumption < 0) {
+                alert('La lectura actual no puede ser menor que la lectura anterior.');
+                return;
+            }
+            
+            // Calcular costo según tarifas
+            if (consumption <= 50) {
+                cost = consumption * 4.00;
+            } else {
+                cost = (50 * 4.00) + ((consumption - 50) * 5.21);
+            }
+            
+            // Mostrar resultados
+            document.getElementById('detectedReading').textContent = currentReading;
+            document.getElementById('prevReading').textContent = previousReading;
+            document.getElementById('consumption').textContent = consumption;
+            document.getElementById('cost').textContent = cost.toFixed(2);
+            
+            // Calcular promedios diarios
+            calculateDailyAverages();
+            
+            // Mostrar sección de resultados
+            document.getElementById('ocrResult').style.display = 'block';
+            document.getElementById('saveReadingBtn').style.display = 'block';
+            document.getElementById('newReadingBtn').style.display = 'block';
+        });
+        
+        // Calcular promedios diarios de consumo y costo
+        function calculateDailyAverages() {
+            const dailyConsumption = consumption / daysPeriod;
+            const dailyCost = cost / daysPeriod;
+            
+            document.getElementById('dailyConsumption').textContent = dailyConsumption.toFixed(2) + ' kWh';
+            document.getElementById('dailyCost').textContent = 'L ' + dailyCost.toFixed(2);
+        }
+        
+        // Guardar lectura en registro (pestaña 1)
+        document.getElementById('saveReadingBtn').addEventListener('click', () => {
+            saveReadingToHistory();
+            alert('Lectura guardada en el historial.');
+        });
+        
+        // Función para guardar lectura en historial (pestaña 1)
+        function saveReadingToHistory() {
+            // Obtener historial actual de localStorage
+            let history = JSON.parse(localStorage.getItem('readingHistory')) || [];
+            
+            // Crear nuevo registro
+            const newRecord = {
+                id: Date.now(),
+                date: new Date().toLocaleDateString('es-HN', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                }),
+                prevDate: document.getElementById('prevReadingDate').value,
+                previousReading: previousReading,
+                currentReading: currentReading,
+                consumption: consumption,
+                cost: cost,
+                daysPeriod: daysPeriod
+            };
+            
+            // Agregar al historial
+            history.push(newRecord);
+            
+            // Guardar en localStorage
+            localStorage.setItem('readingHistory', JSON.stringify(history));
+            
+            // Actualizar tabla
+            loadReadingHistory();
+        }
+        
+        // Cargar historial de lecturas (pestaña 1)
+        function loadReadingHistory() {
+            const historyBody = document.getElementById('readingHistoryBody');
+            historyBody.innerHTML = '';
+            
+            const history = JSON.parse(localStorage.getItem('readingHistory')) || [];
+            
+            if (history.length === 0) {
+                historyBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No hay lecturas registradas</td></tr>';
+                document.getElementById('historicalAvg').textContent = '0.0 kWh';
+                return;
+            }
+            
+            // Ordenar historial por fecha (más reciente primero)
+            history.sort((a, b) => b.id - a.id);
+            
+            // Calcular promedios
+            let totalConsumption = 0;
+            let totalCost = 0;
+            let totalDays = 0;
+            
+            history.forEach(record => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${record.date}</td>
+                    <td>${record.previousReading}</td>
+                    <td>${record.currentReading}</td>
+                    <td>${record.consumption}</td>
+                    <td>${record.cost.toFixed(2)}</td>
+                    <td>
+                        <button class="delete-reading" data-id="${record.id}" style="background: var(--warning); padding: 5px 10px; font-size: 0.9rem;">Eliminar</button>
+                    </td>
+                `;
+                historyBody.appendChild(row);
+                
+                totalConsumption += record.consumption;
+                totalCost += record.cost;
+                totalDays += record.daysPeriod || 30;
+            });
+            
+            // Calcular promedios diarios globales
+            const avgDailyConsumption = totalConsumption / totalDays;
+            const historicalAvg = totalConsumption > 0 ? 
+                (totalConsumption / history.length / daysPeriod).toFixed(2) : 0;
+            
+            document.getElementById('historicalAvg').textContent = avgDailyConsumption.toFixed(2) + ' kWh';
+            
+            // Actualizar gráfico
+            updateReadingChart();
+            
+            // Agregar event listeners para botones de eliminar
+            document.querySelectorAll('.delete-reading').forEach(button => {
+                button.addEventListener('click', function() {
+                    const recordId = parseInt(this.dataset.id);
+                    deleteReadingRecord(recordId);
+                });
+            });
+        }
+        
+        // Actualizar gráfico de lecturas
+        function updateReadingChart() {
+            const history = JSON.parse(localStorage.getItem('readingHistory')) || [];
+            if (history.length === 0) return;
+            
+            // Obtener los últimos 6 meses
+            const now = new Date();
+            const sixMonthsAgo = new Date();
+            sixMonthsAgo.setMonth(now.getMonth() - 6);
+            
+            // Filtrar registros de los últimos 6 meses
+            const recentRecords = history.filter(record => {
+                const recordDate = new Date(record.date.split('/').reverse().join('-'));
+                return recordDate >= sixMonthsAgo;
+            });
+            
+            // Agrupar por mes
+            const monthlyData = {};
+            recentRecords.forEach(record => {
+                const recordDate = new Date(record.date.split('/').reverse().join('-'));
+                const monthYear = `${recordDate.getMonth() + 1}/${recordDate.getFullYear()}`;
+                
+                if (!monthlyData[monthYear]) {
+                    monthlyData[monthYear] = {
+                        consumption: 0,
+                        count: 0
+                    };
+                }
+                
+                monthlyData[monthYear].consumption += record.consumption;
+                monthlyData[monthYear].count++;
+            });
+            
+            // Preparar datos para el gráfico
+            const labels = Object.keys(monthlyData);
+            const data = labels.map(label => monthlyData[label].consumption / monthlyData[label].count);
+            
+            // Crear o actualizar el gráfico
+            const ctx = document.getElementById('readingChart').getContext('2d');
+            
+            if (readingChart) {
+                readingChart.destroy();
+            }
+            
+            readingChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Consumo Promedio (kWh)',
+                        data: data,
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Eliminar registro individual de lectura
+        function deleteReadingRecord(id) {
+            if (confirm('¿Estás seguro de que deseas eliminar este registro de lectura?')) {
+                let history = JSON.parse(localStorage.getItem('readingHistory')) || [];
+                history = history.filter(record => record.id !== id);
+                localStorage.setItem('readingHistory', JSON.stringify(history));
+                loadReadingHistory();
+            }
+        }
+        
+        // Nueva lectura (pestaña 1)
+        document.getElementById('newReadingBtn').addEventListener('click', () => {
+            // Resetear formulario
+            document.getElementById('imageInput').value = '';
+            document.getElementById('previousReading').value = '';
+            document.getElementById('prevReadingDate').value = '';
+            document.getElementById('previewImage').src = '';
+            document.querySelector('.preview-container').style.border = '2px dashed #ccc';
+            document.getElementById('ocrStatus').textContent = 'Selecciona una imagen para comenzar';
+            document.getElementById('ocrStatus').style.color = 'var(--gray)';
+            document.getElementById('ocrProgress').style.width = '0%';
+            document.getElementById('digitValidationSection').style.display = 'none';
+            document.getElementById('ocrResult').style.display = 'none';
+            document.getElementById('saveReadingBtn').style.display = 'none';
+            document.getElementById('newReadingBtn').style.display = 'none';
+        });
+        
+        // Pestaña 2: Guardar recibo
+        document.getElementById('saveReceiptBtn').addEventListener('click', function() {
+            const receiptDate = document.getElementById('receiptDate').value;
+            const daysBilled = parseInt(document.getElementById('daysBilled').value) || 0;
+            const totalKwh = parseFloat(document.getElementById('totalKwh').value) || 0;
+            const energyCost = parseFloat(document.getElementById('energyCostReg').value) || 0;
+            const totalReceipt = parseFloat(document.getElementById('totalReceipt').value) || 0;
+            
+            if (!receiptDate || !daysBilled || !totalKwh || !energyCost || !totalReceipt) {
+                alert('Por favor, completa todos los campos.');
+                return;
+            }
+            
+            // Obtener historial actual de localStorage
+            let history = JSON.parse(localStorage.getItem('receiptHistory')) || [];
+            
+            // Crear nuevo registro
+            const newRecord = {
+                id: Date.now(),
+                date: receiptDate,
+                daysBilled: daysBilled,
+                totalKwh: totalKwh,
+                energyCost: energyCost,
+                totalReceipt: totalReceipt
+            };
+            
+            // Agregar al historial
+            history.push(newRecord);
+            
+            // Guardar en localStorage
+            localStorage.setItem('receiptHistory', JSON.stringify(history));
+            
+            // Actualizar tabla
+            loadReceiptHistory();
+            
+            // Resetear formulario
+            document.getElementById('receiptDate').value = '';
+            document.getElementById('daysBilled').value = '30';
+            document.getElementById('totalKwh').value = '';
+            document.getElementById('energyCostReg').value = '';
+            document.getElementById('totalReceipt').value = '';
+            
+            alert('Recibo guardado exitosamente.');
+        });
+        
+        // Pestaña 2: Cargar historial de recibos
+        function loadReceiptHistory() {
+            const historyBody = document.getElementById('historyBody');
+            historyBody.innerHTML = '';
+            
+            const history = JSON.parse(localStorage.getItem('receiptHistory')) || [];
+            
+            if (history.length === 0) {
+                historyBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No hay recibos registrados</td></tr>';
+                updateReceiptChart();
+                return;
+            }
+            
+            // Ordenar historial por fecha (más reciente primero)
+            history.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            history.forEach(record => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${record.date}</td>
+                    <td>${record.totalKwh}</td>
+                    <td>${record.energyCost.toFixed(2)}</td>
+                    <td>${record.daysBilled}</td>
+                    <td>${record.totalReceipt.toFixed(2)}</td>
+                    <td>
+                        <button class="delete-receipt" data-id="${record.id}" style="background: var(--warning); padding: 5px 10px; font-size: 0.9rem;">Eliminar</button>
+                    </td>
+                `;
+                historyBody.appendChild(row);
+            });
+            
+            // Actualizar gráfico
+            updateReceiptChart();
+            
+            // Agregar event listeners para botones de eliminar
+            document.querySelectorAll('.delete-receipt').forEach(button => {
+                button.addEventListener('click', function() {
+                    const recordId = parseInt(this.dataset.id);
+                    deleteReceiptRecord(recordId);
+                });
+            });
+        }
+        
+        // Actualizar gráfico de recibos
+        function updateReceiptChart() {
+            const history = JSON.parse(localStorage.getItem('receiptHistory')) || [];
+            if (history.length === 0) return;
+            
+            // Obtener los últimos 6 meses
+            const now = new Date();
+            const sixMonthsAgo = new Date();
+            sixMonthsAgo.setMonth(now.getMonth() - 6);
+            
+            // Filtrar registros de los últimos 6 meses
+            const recentReceipts = history.filter(record => {
+                const recordDate = new Date(record.date);
+                return recordDate >= sixMonthsAgo;
+            });
+            
+            // Agrupar por mes
+            const monthlyData = {};
+            recentReceipts.forEach(record => {
+                const recordDate = new Date(record.date);
+                const monthYear = `${recordDate.getMonth() + 1}/${recordDate.getFullYear()}`;
+                
+                if (!monthlyData[monthYear]) {
+                    monthlyData[monthYear] = {
+                        consumption: 0,
+                        count: 0
+                    };
+                }
+                
+                monthlyData[monthYear].consumption += record.totalKwh;
+                monthlyData[monthYear].count++;
+            });
+            
+            // Preparar datos para el gráfico
+            const labels = Object.keys(monthlyData);
+            const data = labels.map(label => monthlyData[label].consumption / monthlyData[label].count);
+            
+            // Crear o actualizar el gráfico
+            const ctx = document.getElementById('receiptChart').getContext('2d');
+            
+            if (receiptChart) {
+                receiptChart.destroy();
+            }
+            
+            receiptChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Consumo Promedio (kWh)',
+                        data: data,
+                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Eliminar registro individual de recibo
+        function deleteReceiptRecord(id) {
+            if (confirm('¿Estás seguro de que deseas eliminar este recibo?')) {
+                let history = JSON.parse(localStorage.getItem('receiptHistory')) || [];
+                history = history.filter(record => record.id !== id);
+                localStorage.setItem('receiptHistory', JSON.stringify(history));
+                loadReceiptHistory();
+            }
+        }
+        
+        // Borrar historial completo (pestaña 2)
+        document.getElementById('clearHistoryBtn').addEventListener('click', () => {
+            if (confirm('¿Estás seguro de que deseas borrar todo el historial de recibos? Esta acción no se puede deshacer.')) {
+                localStorage.removeItem('receiptHistory');
+                loadReceiptHistory();
+            }
+        });
+        
+        // Pestaña 3: Simulador de lectura
+        document.getElementById('simulateBtn').addEventListener('click', () => {
+            const prevReading = parseInt(document.getElementById('simPrevReading').value);
+            const minConsumption = parseInt(document.getElementById('minConsumption').value);
+            const maxConsumption = parseInt(document.getElementById('maxConsumption').value);
+            daysPeriod = parseInt(document.getElementById('daysPeriod').value) || 30;
+            
+            if (!prevReading || !minConsumption || !maxConsumption) {
+                alert('Por favor, completa todos los campos.');
+                return;
+            }
+            
+            if (minConsumption >= maxConsumption) {
+                alert('El consumo mínimo debe ser menor que el consumo máximo.');
+                return;
+            }
+            
+            // Calcular lecturas simuladas
+            const minReading = prevReading + minConsumption;
+            const maxReading = prevReading + maxConsumption;
+            
+            // Calcular costos
+            const minCost = calculateCost(minConsumption);
+            const maxCost = calculateCost(maxConsumption);
+            
+            // Calcular costos diarios
+            const minDailyCost = minCost / daysPeriod;
+            const maxDailyCost = maxCost / daysPeriod;
+            
+            // Mostrar resultados
+            document.getElementById('minReading').textContent = minReading;
+            document.getElementById('minSimConsumption').textContent = minConsumption;
+            document.getElementById('minSimCost').textContent = minCost.toFixed(2);
+            document.getElementById('minDailyCost').textContent = minDailyCost.toFixed(2);
+            
+            document.getElementById('maxReading').textContent = maxReading;
+            document.getElementById('maxSimConsumption').textContent = maxConsumption;
+            document.getElementById('maxSimCost').textContent = maxCost.toFixed(2);
+            document.getElementById('maxDailyCost').textContent = maxDailyCost.toFixed(2);
+            
+            // Generar diales con sentido de giro específico
+            generateDials(minReading, 'minDials');
+            generateDials(maxReading, 'maxDials');
+            
+            // Mostrar contenedor de simulación
+            document.getElementById('simulationContainer').style.display = 'block';
+        });
+        
+        // Función para calcular costo según tarifas
+        function calculateCost(consumption) {
+            if (consumption <= 50) {
+                return consumption * 4.00;
+            } else {
+                return (50 * 4.00) + ((consumption - 50) * 5.21);
+            }
+        }
+        
+        // Función para generar diales con sentido de giro específico
+        function generateDials(reading, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            // Convertir lectura a cadena de 5 dígitos
+            const readingStr = reading.toString().padStart(5, '0');
+            const dialNames = ['DM', 'UM', 'C', 'D', 'U'];
+            
+            // Direcciones específicas para cada dial (1 = horario, -1 = antihorario)
+            const directions = {
+                'DM': 1,   // Horario
+                'UM': -1,  // Antihorario
+                'C': 1,    // Horario
+                'D': -1,   // Antihorario
+                'U': 1     // Horario
+            };
+            
+            for (let i = 0; i < 5; i++) {
+                const digit = parseInt(readingStr[i]);
+                const dialName = dialNames[i];
+                const direction = directions[dialName];
+                
+                const dialContainer = document.createElement('div');
+                dialContainer.className = 'dial-container';
+                
+                dialContainer.innerHTML = `
+                    <div class="dial-label">${dialName}</div>
+                    <div class="dial">
+                        <svg width="160" height="160" viewBox="0 0 100 100">
+                            <circle class="dial-center" cx="50" cy="50" r="45" fill="transparent" stroke="#000" stroke-width="1"/>
+                            ${generateDialNumbers(digit, direction)}
+                            ${generateDialLines()}
+                            ${generateNeedle(digit, direction)}
+                            <text class="dial-text" x="50" y="50">${digit}</text>
+                        </svg>
+                    </div>
+                `;
+                
+                container.appendChild(dialContainer);
+            }
+        }
+        
+        // Generar números del dial (0-9) con dirección específica
+        function generateDialNumbers(activeDigit, direction) {
+            let numbersHTML = '';
+            const radius = 35;
+            
+            for (let i = 0; i < 10; i++) {
+                // Ajustar ángulo según dirección
+                let angle;
+                if (direction === 1) {
+                    // Sentido horario (0 en la posición norte)
+                    angle = (i * 36 - 90) * (Math.PI / 180);
+                } else {
+                    // Sentido antihorario (0 en la posición norte)
+                    angle = (-i * 36 - 90) * (Math.PI / 180);
+                }
+                
+                const x = 50 + radius * Math.cos(angle);
+                const y = 50 + radius * Math.sin(angle);
+                const isActive = i === activeDigit;
+                
+                numbersHTML += `<text class="dial-number ${isActive ? 'active' : ''}" x="${x}" y="${y}">${i}</text>`;
+            }
+            
+            return numbersHTML;
+        }
+        
+        // Generar marcas del dial
+        function generateDialLines() {
+            let linesHTML = '';
+            const radius = 40;
+            
+            for (let i = 0; i < 36; i++) {
+                const angle = i * 10 * (Math.PI / 180);
+                const length = i % 9 === 0 ? 10 : 5; // Marcas más largas cada 10 números
+                const startX = 50 + (radius - length) * Math.cos(angle);
+                const startY = 50 + (radius - length) * Math.sin(angle);
+                const endX = 50 + radius * Math.cos(angle);
+                const endY = 50 + radius * Math.sin(angle);
+                
+                linesHTML += `<line class="dial-line" x1="${startX}" y1="${startY}" x2="${endX}" y2="${endY}"/>`;
+            }
+            
+            return linesHTML;
+        }
+        
+        // Generar aguja del dial con dirección específica
+        function generateNeedle(digit, direction) {
+            // Calcular ángulo según dirección
+            let angle;
+            if (direction === 1) {
+                // Sentido horario
+                angle = (digit * 36 - 90) * (Math.PI / 180);
+            } else {
+                // Sentido antihorario
+                angle = (-digit * 36 - 90) * (Math.PI / 180);
+            }
+            
+            const length = 35;
+            const endX = 50 + length * Math.cos(angle);
+            const endY = 50 + length * Math.sin(angle);
+            
+            return `<line class="dial-needle" x1="50" y1="50" x2="${endX}" y2="${endY}"/>`;
+        }
+        
+        // Inicializar la página
+        window.addEventListener('DOMContentLoaded', () => {
+            // Cargar historiales
+            loadReadingHistory();
+            loadReceiptHistory();
+            
+            // Mostrar estado inicial
+            document.getElementById('ocrStatus').textContent = 'Selecciona una imagen para comenzar';
+            
+            // Establecer fechas predeterminadas
+            const today = new Date();
+            document.getElementById('prevReadingDate').valueAsDate = new Date(today.setDate(today.getDate() - 30));
+            document.getElementById('receiptDate').valueAsDate = new Date();
+            document.getElementById('simPrevReading').focus();
+        });
+    </script>
+</body>
+</html>
